@@ -1,0 +1,31 @@
+{
+  "name": "NEXORA FX SYSTEM",
+  "short_name": "NEXORA FX",
+  "description": "Trading decision, risk, journal, intuition, research validation and EA release-governance console",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#d8dde3",
+  "theme_color": "#4d6f92",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "./"
+}
