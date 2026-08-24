@@ -1,5 +1,5 @@
-NEXORA FX SYSTEM v1.0
-Public Edition — Trading Decision / Research Console
+NEXORA FX SYSTEM v1.1
+Public Edition - Trading Decision / Research Console
 
 Deploy the files in this folder to the web-root of the public site:
 - index.html
@@ -11,7 +11,7 @@ Deploy the files in this folder to the web-root of the public site:
 - apple-touch-icon.png
 - .nojekyll
 - manual.pdf
-- RELEASE_NOTES_v1.0.md
+- RELEASE_NOTES_v1.1.md
 
 iPhone / Safari:
 1. Open the deployed site online once.
@@ -20,10 +20,20 @@ iPhone / Safari:
 
 Public identity:
 - Product: NEXORA FX SYSTEM
-- Console: ENTRY CONSOLE v1.0
-- Service Worker cache: nexora-fx-v1-0-v1
+- Console: ENTRY CONSOLE v1.1
+- Service Worker cache: nexora-fx-v1-1-v1
 - localStorage namespace: nexoraFX.*
 - Backup format: NEXORA_FX_BACKUP
+
+New in v1.1:
+- Trade Journal: "＋ 取引を手動で記録".
+- Record broker trade history even when the current Gate or current position plan is not valid.
+- Manual fields include symbol, timeframe, direction, Status, Basis, account currency,
+  optional planned values, actual Entry/Exit, time, Lot, realized amount/R and notes.
+- Manual records are descriptive Journal records and are not automatically promoted
+  to prospective PLAN / ENTRY Evidence.
+- Trade Journal CSV exports record_origin and recorded_at_utc.
+- Journal schema: 6.
 
 Functional scope:
 - Pre-trade risk / gate calculation
@@ -38,21 +48,10 @@ Functional scope:
 - Research JSON / Trade Journal CSV / JSON Backup-Restore
 - PWA / offline app shell
 
-Isolation from the private edition:
-This public edition intentionally uses its own storage namespace, backup format,
-notification tags, export filenames, PWA cache name and icon branding.
-It does not silently read or overwrite data from another branded edition.
-
 Important boundaries:
+- Manual Journal records are observational unless supported by separately captured prior Evidence.
 - Validation uses recorded Evidence + Journal outcomes; it is not a complete tick/bid-ask market replay.
 - Parity verifies Rule decisions on frozen features; indicator/runtime/broker parity is a separate layer.
 - Shadow runs only while the app is active and sends no broker orders.
-- APP STOP is an in-app release-control state and does not physically stop an external EA or broker.
-- No automatic broker ordering, MQL/Pine auto-generation, or automatic parameter optimization is enabled.
+- No automatic broker ordering is enabled.
 - PASS / COMPLETE / Release do not guarantee future profitability.
-
-Coexistence note:
-localStorage is isolated by namespace. The NEXORA Service Worker deletes only
-older nexora-fx-* caches. If another app on the same web origin has a Service Worker
-that deletes all origin caches indiscriminately, use a separate origin/custom domain
-or update that other app's cache cleanup before relying on offline coexistence.

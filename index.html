@@ -1216,7 +1216,7 @@ textarea.journalNotes{
 
   <script>
 /* ============================================================
-   NEXORA FX SYSTEM — ENTRY CONSOLE v1.0
+   NEXORA FX SYSTEM — ENTRY CONSOLE v1.1
    Classic iUI-style vanilla JavaScript port
    ============================================================ */
 
@@ -5237,7 +5237,13 @@ textarea.journalNotes{
   }
 
   function basisChangedAfterOutcome(item) {
-    if(!item || item.basisEditedAt==null || !isFinite(Number(item.basisEditedAt)))return false;
+    if(!item)return false;
+    if(item.recordOrigin==="MANUAL_JOURNAL" &&
+       item.basisDeclaredAt!=null && isFinite(Number(item.basisDeclaredAt)) &&
+       item.actualExitAt!=null && isFinite(Number(item.actualExitAt))){
+      return Number(item.basisDeclaredAt) > Number(item.actualExitAt);
+    }
+    if(item.basisEditedAt==null || !isFinite(Number(item.basisEditedAt)))return false;
     if(item.actualExitAt!=null && isFinite(Number(item.actualExitAt))){
       return Number(item.basisEditedAt) > Number(item.actualExitAt);
     }
@@ -5593,7 +5599,7 @@ textarea.journalNotes{
   var HYPOTHESIS_STORE_KEY = "nexoraFX.hypotheses.v1";
   var CANDIDATE_STORE_KEY = "nexoraFX.researchCandidates.v1";
   var RULE_SPEC_STORE_KEY = "nexoraFX.ruleSpecs.v1";
-  var RESEARCH_APP_VERSION = "1.0";
+  var RESEARCH_APP_VERSION = "1.1";
   var hypothesisForkBase = null;
   var ruleForkBase = null;
   var hypothesisEvidenceDraft = [];
@@ -8882,7 +8888,7 @@ textarea.journalNotes{
     }
     items.sort(function (a, b) { return Number(a.createdAt || 0) - Number(b.createdAt || 0); });
     var header = [
-      "id", "status", "symbol", "timeframe", "direction", "mode", "entry_basis",
+      "id", "record_origin", "recorded_at_utc", "status", "symbol", "timeframe", "direction", "mode", "entry_basis",
       "basis_declared_at_utc", "basis_source", "basis_original", "basis_edited_at_utc",
       "predecision_recorded_at_utc", "predecision_timing_status", "predecision_confidence", "predecision_falsifier",
       "rule_adherence", "decision_quality", "risk_discipline", "manual_intervention", "execution_quality", "news_context", "exception_reason", "review_updated_at_utc",
@@ -8900,7 +8906,7 @@ textarea.journalNotes{
       var actualAmount = item.actualAmount != null && isFinite(Number(item.actualAmount)) ? Number(item.actualAmount) : "";
       var derivedAmount = amount && amount.source === "RISK_DERIVED" ? amount.value : "";
       rows.push([
-        item.id, item.status, item.symbol, item.timeframe, item.direction, item.mode, item.entryBasis,
+        item.id, item.recordOrigin || "PLAN_JOURNAL", formatCsvUtc(item.recordedAt || item.createdAt), item.status, item.symbol, item.timeframe, item.direction, item.mode, item.entryBasis,
         formatCsvUtc(item.basisDeclaredAt), item.basisSource || "", item.basisOriginal || "", formatCsvUtc(item.basisEditedAt),
         formatCsvUtc(item.preDecisionRecordedAt),
         (item.preDecisionRecordedAt!=null&&item.actualEntryAt!=null)
@@ -8937,7 +8943,7 @@ textarea.journalNotes{
 
   function nexoraStorageKeys(){var out=[],i,k;if(!storageAvailable())return out;for(i=0;i<window.localStorage.length;i++){k=window.localStorage.key(i);if(k&&k.indexOf("nexoraFX.")===0)out.push(k);}out.sort();return out;}
 
-  function exportNexoraBackup(){if(!storageAvailable()){el("backupStatus").className="opsStatus error";el("backupStatus").innerHTML="<strong>ERROR</strong><br>localStorageを利用できません。";return;}var include=!!el("backupIncludeApiKey").checked,keys=nexoraStorageKeys(),data={},i,k,secret=false;for(i=0;i<keys.length;i++){k=keys[i];if(k===BACKUP_META_KEY)continue;if(k===MARKET_DATA_API_KEY&&!include)continue;data[k]=window.localStorage.getItem(k);if(k===MARKET_DATA_API_KEY)secret=true;}var payload={format:"NEXORA_FX_BACKUP",backupVersion:1,appVersion:"1.0",exportedAt:new Date().getTime(),secretIncluded:secret,keys:data};var blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a"),d=new Date(),name="nexora-fx-backup-"+d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())+".json";a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);window.setTimeout(function(){URL.revokeObjectURL(url);},1000);el("backupStatus").className="opsStatus ok";storageWrite(BACKUP_META_KEY,{schema:1,exportedAt:new Date().getTime(),journalCount:getJournal().items.length,tradeCount:getTrades().items.length,portfolioCount:getPortfolio().items.length});renderBackupReadiness();el("backupStatus").innerHTML="<strong>EXPORTED</strong><br>"+Object.keys(data).length+" keys / API Key "+(secret?"含む":"除外");}
+  function exportNexoraBackup(){if(!storageAvailable()){el("backupStatus").className="opsStatus error";el("backupStatus").innerHTML="<strong>ERROR</strong><br>localStorageを利用できません。";return;}var include=!!el("backupIncludeApiKey").checked,keys=nexoraStorageKeys(),data={},i,k,secret=false;for(i=0;i<keys.length;i++){k=keys[i];if(k===BACKUP_META_KEY)continue;if(k===MARKET_DATA_API_KEY&&!include)continue;data[k]=window.localStorage.getItem(k);if(k===MARKET_DATA_API_KEY)secret=true;}var payload={format:"NEXORA_FX_BACKUP",backupVersion:1,appVersion:"1.1",exportedAt:new Date().getTime(),secretIncluded:secret,keys:data};var blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a"),d=new Date(),name="nexora-fx-backup-"+d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())+".json";a.href=url;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);window.setTimeout(function(){URL.revokeObjectURL(url);},1000);el("backupStatus").className="opsStatus ok";storageWrite(BACKUP_META_KEY,{schema:1,exportedAt:new Date().getTime(),journalCount:getJournal().items.length,tradeCount:getTrades().items.length,portfolioCount:getPortfolio().items.length});renderBackupReadiness();el("backupStatus").innerHTML="<strong>EXPORTED</strong><br>"+Object.keys(data).length+" keys / API Key "+(secret?"含む":"除外");}
 
   function validateBackupPayload(p){if(!p||p.format!=="NEXORA_FX_BACKUP"||!p.keys||typeof p.keys!=="object")return false;var k;for(k in p.keys){if(!Object.prototype.hasOwnProperty.call(p.keys,k))continue;if(k.indexOf("nexoraFX.")!==0||typeof p.keys[k]!=="string")return false;try{JSON.parse(p.keys[k]);}catch(e){return false;}}return true;}
 
@@ -12580,11 +12586,11 @@ textarea.journalNotes{
   var selectedJournalId = null;
 
   function getJournal() {
-    var data = storageRead(JOURNAL_KEY, { schema:5, items:[] });
+    var data = storageRead(JOURNAL_KEY, { schema:6, items:[] });
     if (!data || !data.items || typeof data.items.length !== "number") {
-      data = { schema:5, items:[] };
+      data = { schema:6, items:[] };
     }
-    data.schema = 5;
+    data.schema = 6;
     return data;
   }
 
@@ -12758,6 +12764,9 @@ textarea.journalNotes{
       return;
     }
 
+    snap.recordOrigin = snap.recordOrigin || "PLAN_JOURNAL";
+    snap.recordedAt = snap.recordedAt || snap.createdAt;
+
     var data = getJournal();
     data.items.unshift(snap);
 
@@ -12777,6 +12786,244 @@ textarea.journalNotes{
     renderJournal();
     openJournalEditor(snap.id);
     setStorageStatus("Journalへ " + snap.label + " " + snap.direction + " を保存しました。", true);
+  }
+
+  function cloneJournalSelectOptions(sourceId, targetId) {
+    var source = el(sourceId), target = el(targetId);
+    if (!source || !target) return;
+    target.innerHTML = source.innerHTML;
+    if (source.value != null) target.value = source.value;
+  }
+
+  function resetManualJournalForm() {
+    cloneJournalSelectOptions("symbol", "manualJournalSymbol");
+    cloneJournalSelectOptions("tf", "manualJournalTf");
+    cloneJournalSelectOptions("acctCcy", "manualJournalAcctCcy");
+
+    if (el("manualJournalDirection")) {
+      el("manualJournalDirection").value =
+        lastResult && lastResult.dir != null ? (lastResult.dir > 0 ? "BUY" : "SELL") : "BUY";
+    }
+    if (el("manualJournalStatus")) el("manualJournalStatus").value = "OPEN";
+    if (el("manualJournalBasis")) el("manualJournalBasis").value = "";
+
+    var ids = [
+      "manualJournalPlannedEntry","manualJournalPlannedSL","manualJournalPlannedTP","manualJournalRisk",
+      "manualJournalActualEntry","manualJournalEntryAt","manualJournalActualExit","manualJournalExitAt",
+      "manualJournalLot","manualJournalAmount","manualJournalR","manualJournalNotes"
+    ];
+    for (var i=0;i<ids.length;i++) if (el(ids[i])) el(ids[i]).value = "";
+
+    if (el("journalManualStatus")) {
+      el("journalManualStatus").className = "statusBox";
+      el("journalManualStatus").innerHTML =
+        "Brokerの実際の約定履歴を入力してください。現在値を過去の約定価格として自動使用しません。";
+    }
+  }
+
+  function showManualJournalForm() {
+    resetManualJournalForm();
+    if (el("journalManualForm")) el("journalManualForm").style.display = "block";
+    if (el("journalManualNew")) el("journalManualNew").style.display = "none";
+  }
+
+  function hideManualJournalForm() {
+    if (el("journalManualForm")) el("journalManualForm").style.display = "none";
+    if (el("journalManualNew")) el("journalManualNew").style.display = "";
+  }
+
+  function manualJournalOptionalNumber(id, positiveOnly) {
+    var node = el(id);
+    var text = node ? String(node.value || "").replace(/^\s+|\s+$/g, "") : "";
+    if (!text) return {ok:true,value:null};
+    var num = Number(text);
+    if (!isFinite(num) || (positiveOnly && num <= 0)) return {ok:false,value:null};
+    return {ok:true,value:num};
+  }
+
+  function manualJournalProviderSymbol(symbol) {
+    var settings = getMarketDataSettings();
+    if (settings && settings.symbolOverrides && settings.symbolOverrides[symbol]) {
+      return String(settings.symbolOverrides[symbol]);
+    }
+    var d = providerDefaultSymbol(symbol);
+    return d && d.symbol ? String(d.symbol) : symbol;
+  }
+
+  function saveManualJournalRecord() {
+    var symbol = value("manualJournalSymbol");
+    var timeframe = value("manualJournalTf");
+    var direction = value("manualJournalDirection");
+    var status = value("manualJournalStatus");
+    var basisRaw = value("manualJournalBasis");
+    var basis = validEntryBasis(basisRaw) ? basisRaw : null;
+    var acctCcy = value("manualJournalAcctCcy") || value("acctCcy") || "";
+    var S = SYMBOLS[symbol];
+
+    if (!S || !timeframe || (direction !== "BUY" && direction !== "SELL")) {
+      setStorageStatus("手動Journalの銘柄・時間足・方向を確認してください。", false);
+      return;
+    }
+
+    var plannedEntry = manualJournalOptionalNumber("manualJournalPlannedEntry", true);
+    var plannedSL = manualJournalOptionalNumber("manualJournalPlannedSL", true);
+    var plannedTP = manualJournalOptionalNumber("manualJournalPlannedTP", true);
+    var risk = manualJournalOptionalNumber("manualJournalRisk", true);
+    var actualEntry = manualJournalOptionalNumber("manualJournalActualEntry", true);
+    var actualExit = manualJournalOptionalNumber("manualJournalActualExit", true);
+    var lot = manualJournalOptionalNumber("manualJournalLot", true);
+    var amount = manualJournalOptionalNumber("manualJournalAmount", false);
+    var realizedR = manualJournalOptionalNumber("manualJournalR", false);
+
+    var nums = [plannedEntry,plannedSL,plannedTP,risk,actualEntry,actualExit,lot,amount,realizedR];
+    for (var i=0;i<nums.length;i++) {
+      if (!nums[i].ok) {
+        setStorageStatus("手動Journalの数値入力を確認してください。価格・Lot・Riskは0より大きい値にしてください。", false);
+        return;
+      }
+    }
+
+    var entryAt = parseLocalDateTimeInput(el("manualJournalEntryAt").value);
+    var exitAt = parseLocalDateTimeInput(el("manualJournalExitAt").value);
+    if (entryAt != null && exitAt != null && Number(exitAt) < Number(entryAt)) {
+      setStorageStatus("Exit日時はEntry日時以降にしてください。", false);
+      return;
+    }
+
+    var executed = status === "OPEN" || status === "WIN" || status === "LOSS" || status === "BE";
+    var closed = status === "WIN" || status === "LOSS" || status === "BE";
+
+    if (executed && actualEntry.value == null) {
+      setStorageStatus("OPEN / WIN / LOSS / BEでは実Entryを入力してください。", false); return;
+    }
+    if (executed && lot.value == null) {
+      setStorageStatus("OPEN / WIN / LOSS / BEではLotを入力してください。", false); return;
+    }
+    if (closed && actualExit.value == null) {
+      setStorageStatus("WIN / LOSS / BEでは実Exitを入力してください。", false); return;
+    }
+    if ((status === "PLANNED" || status === "OPEN") &&
+        (amount.value != null || realizedR.value != null)) {
+      setStorageStatus("PLANNED / OPENでは実現金額・実現Rを入力しません。決済後に入力してください。", false); return;
+    }
+
+    var rValue = realizedR.value;
+    if (rValue == null && amount.value != null && risk.value != null && risk.value > 0) {
+      rValue = amount.value / risk.value;
+    }
+
+    if (status === "WIN") {
+      if (amount.value != null && amount.value <= 0) { setStorageStatus("WINの実現金額は0より大きい値にしてください。", false); return; }
+      if (rValue != null && rValue <= 0) { setStorageStatus("WINの実現Rは0より大きい値にしてください。", false); return; }
+    }
+    if (status === "LOSS") {
+      if (amount.value != null && amount.value >= 0) { setStorageStatus("LOSSの実現金額は0より小さい値にしてください。", false); return; }
+      if (rValue != null && rValue >= 0) { setStorageStatus("LOSSの実現Rは0より小さい値にしてください。", false); return; }
+    }
+    if (status === "BE") {
+      if (amount.value != null && Math.abs(amount.value) > 1e-12) { setStorageStatus("BEの実現金額は0にしてください。", false); return; }
+      if (rValue != null && Math.abs(rValue) > 1e-12) { setStorageStatus("BEの実現Rは0Rにしてください。", false); return; }
+    }
+    if (status === "CANCEL") {
+      if ((amount.value != null && Math.abs(amount.value) > 1e-12) ||
+          (rValue != null && Math.abs(rValue) > 1e-12)) {
+        setStorageStatus("CANCELは実現金額・実現Rを空欄または0にしてください。", false); return;
+      }
+    }
+
+    var now = new Date().getTime();
+    var digits = S.digits == null ? 5 : Math.max(0,Math.min(8,Number(S.digits)));
+    var pipSize = (!S.customSpec && S.pip != null && isFinite(Number(S.pip)) && Number(S.pip) > 0)
+      ? Number(S.pip) : null;
+    var displayEntry = plannedEntry.value != null ? plannedEntry.value : actualEntry.value;
+
+    var item = {
+      id:makeJournalId(),
+      recordOrigin:"MANUAL_JOURNAL",
+      manualRecordVersion:1,
+      recordedAt:now,
+      createdAt:now,
+      updatedAt:now,
+      symbol:symbol,
+      label:S.label || symbol,
+      timeframe:timeframe,
+      d1bias:null,
+      depth:null,
+      mode:"MANUAL",
+      direction:direction,
+      basisVersion:1,
+      entryBasis:basis,
+      basisDeclaredAt:basis != null ? now : null,
+      basisSource:basis != null ? "MANUAL_JOURNAL" : null,
+      basisOriginal:null,
+      basisEditedAt:null,
+      intuitionNote:"",
+      preDecisionVersion:1,
+      preDecisionRecordedAt:null,
+      preDecisionConfidence:null,
+      preDecisionFalsifier:"",
+      reviewVersion:1,
+      ruleAdherence:"UNKNOWN",
+      decisionQuality:"UNKNOWN",
+      riskDiscipline:"UNKNOWN",
+      manualIntervention:"UNKNOWN",
+      executionQuality:"UNKNOWN",
+      newsContext:"UNKNOWN",
+      exceptionReason:"",
+      reviewUpdatedAt:null,
+      stateAtSave:"MANUAL_RECORD",
+      entry:displayEntry,
+      sl:plannedSL.value,
+      tp1:plannedTP.value,
+      tp2:null,
+      lot:lot.value,
+      plannedRR:null,
+      risk:risk.value,
+      acctCcy:acctCcy,
+      digits:digits,
+      pipSize:pipSize,
+      pipValuePerLot:null,
+      providerSymbolAtSave:manualJournalProviderSymbol(symbol),
+      excursionVersion:1,
+      actualEntry:actualEntry.value,
+      actualEntryAt:entryAt,
+      actualExit:actualExit.value,
+      actualExitAt:exitAt,
+      actualAmount:amount.value,
+      numericEvidenceVersion:null,
+      numericSnapshot:null,
+      edgeEvidenceVersion:null,
+      edgeStates:null,
+      edgeFactors:[],
+      edgeScore:null,
+      status:status,
+      realizedR:rValue,
+      notes:String(el("manualJournalNotes").value || "").substring(0,800)
+    };
+
+    if (basis != null && exitAt != null && Number(now) > Number(exitAt)) item.basisEditedAt = now;
+
+    excursionReset(item);
+    if (executed) {
+      excursionEnsureBaseline(item);
+      excursionRefreshDerived(item);
+    }
+
+    var data = getJournal();
+    data.items.unshift(item);
+    if (!saveJournal(data)) {
+      setStorageStatus("手動Journalの保存に失敗しました。", false); return;
+    }
+
+    selectedJournalId = item.id;
+    hideManualJournalForm();
+    renderJournal();
+    openJournalEditor(item.id);
+    setStorageStatus(
+      "手動Journalへ " + (item.label || item.symbol) + " " + item.direction +
+      " / " + item.status + " を保存しました。事前Evidenceには登録していません。",
+      true
+    );
   }
 
   function getJournalItem(id) {
@@ -12831,12 +13078,24 @@ textarea.journalNotes{
     var item = getJournalItem(id);
     if (!item) {
       selectedJournalId = null;
+      if (el("journalRecordSource")) el("journalRecordSource").innerHTML = "<strong>記録元</strong><br>—";
       el("journalEditor").style.display = "none";
       el("journalEditorEmpty").style.display = "block";
       return;
     }
 
     selectedJournalId = id;
+    if (el("journalRecordSource")) {
+      if (item.recordOrigin === "MANUAL_JOURNAL") {
+        el("journalRecordSource").className = "statusBox storageWarn";
+        el("journalRecordSource").innerHTML =
+          "<strong>記録元: 手動Journal</strong><br>Journal集計には含みますが、PLAN / ENTRYの事前Evidenceへは自動登録しません。";
+      } else {
+        el("journalRecordSource").className = "statusBox storageGood";
+        el("journalRecordSource").innerHTML =
+          "<strong>記録元: 建玉設計</strong><br>保存時点の計画スナップショットです。";
+      }
+    }
     el("journalEditStatus").value = item.status || "PLANNED";
     el("journalEditBasis").value = item.entryBasis === "RULE" || item.entryBasis === "INTUITION" || item.entryBasis === "MIXED" ? item.entryBasis : "";
     el("journalEditIntuitionNote").value = item.intuitionNote || "";
@@ -13017,7 +13276,9 @@ textarea.journalNotes{
       excursionRefreshDerived(item);
     }
 
-    if (status === "OPEN" && previousStatus !== "OPEN") {
+    var manualRecord = item.recordOrigin === "MANUAL_JOURNAL";
+
+    if (!manualRecord && status === "OPEN" && previousStatus !== "OPEN") {
       captureEntryTechnicalSnapshot(item, "JOURNAL_OPEN");
     }
 
@@ -13027,7 +13288,7 @@ textarea.journalNotes{
     }
     syncLinkedTradeBasisFromJournal(item);
 
-    if (status === "OPEN" && previousStatus !== "OPEN") {
+    if (!manualRecord && status === "OPEN" && previousStatus !== "OPEN") {
       freezeEvidenceBundle("ENTRY", {
         journal:item,
         source:"AUTO_JOURNAL_ENTRY",
@@ -13035,7 +13296,7 @@ textarea.journalNotes{
         dedupeLinked:true
       });
     }
-    if ((status === "WIN" || status === "LOSS" || status === "BE") &&
+    if (!manualRecord && (status === "WIN" || status === "LOSS" || status === "BE") &&
         previousStatus !== "WIN" && previousStatus !== "LOSS" && previousStatus !== "BE") {
       freezeEvidenceBundle("EXIT", {
         journal:item,
@@ -13080,7 +13341,7 @@ textarea.journalNotes{
   }
 
   function clearJournalAll() {
-    if (!saveJournal({ schema:5, items:[] })) {
+    if (!saveJournal({ schema:6, items:[] })) {
       setStorageStatus("Journal全削除に失敗しました。", false);
       return;
     }
@@ -13169,7 +13430,7 @@ textarea.journalNotes{
       return;
     }
 
-    var html = "", i, x, d, rr, rrText, rText;
+    var html = "", i, x, d, rr, rrText, rText, entryText, slText, riskText, dateMs;
     for (i = 0; i < items.length; i++) {
       x = items[i];
       d = x.digits == null ? 5 : Math.max(0, Math.min(8, Number(x.digits)));
@@ -13177,18 +13438,24 @@ textarea.journalNotes{
       rrText = rr == null || !isFinite(Number(rr)) ? "—" : Number(rr).toFixed(2);
       rText = x.realizedR == null || !isFinite(Number(x.realizedR))
         ? "—" : Number(x.realizedR).toFixed(2) + "R";
+      entryText = x.entry == null || !isFinite(Number(x.entry)) ? "—" : Number(x.entry).toFixed(d);
+      slText = x.sl == null || !isFinite(Number(x.sl)) ? "—" : Number(x.sl).toFixed(d);
+      riskText = x.risk == null || !isFinite(Number(x.risk))
+        ? "—" : commas(x.risk) + (x.acctCcy ? " " + esc(x.acctCcy) : "");
+      dateMs = x.recordOrigin === "MANUAL_JOURNAL" && x.actualEntryAt != null
+        ? x.actualEntryAt : x.createdAt;
 
       html += "<tr>" +
-        "<td>" + esc(formatJournalDate(x.createdAt)) + "</td>" +
+        "<td>" + esc(formatJournalDate(dateMs)) + "</td>" +
         "<td>" + esc(x.label || x.symbol) + "</td>" +
         "<td>" + esc(x.timeframe || "—") + "</td>" +
         "<td>" + esc(x.direction || "—") + "</td>" +
         '<td><span class="basisBadge ' + esc(x.entryBasis || "UNCLASSIFIED") + '">' + esc(x.entryBasis || "UNCLASSIFIED") + '</span></td>' +
         '<td class="' + journalStatusClass(x.status) + '">' + esc(x.status || "PLANNED") + "</td>" +
-        "<td>" + Number(x.entry).toFixed(d) + "</td>" +
-        "<td>" + Number(x.sl).toFixed(d) + "</td>" +
+        "<td>" + entryText + "</td>" +
+        "<td>" + slText + "</td>" +
         "<td>" + rrText + "</td>" +
-        "<td>" + commas(x.risk) + " " + esc(x.acctCcy || "") + "</td>" +
+        "<td>" + riskText + "</td>" +
         "<td>" + rText + "</td>" +
         '<td><button type="button" class="smallDanger" data-jr-edit="' + esc(x.id) + '">編集</button></td>' +
         "</tr>";
@@ -13225,15 +13492,22 @@ textarea.journalNotes{
   function hookPhase4Controls() {
     var saveBtn = el("saveToJournal");
     var saveGridBtn = el("saveGridToJournal");
+    var manualNewBtn = el("journalManualNew");
+    var manualSaveBtn = el("journalManualSave");
+    var manualCancelBtn = el("journalManualCancel");
     var updateBtn = el("journalUpdate");
     var deleteBtn = el("journalDelete");
     var clearBtn = el("clearJournal");
 
     if (saveBtn) saveBtn.onclick = saveCurrentToJournal;
     if (saveGridBtn) saveGridBtn.onclick = saveCurrentToJournal;
+    if (manualNewBtn) manualNewBtn.onclick = showManualJournalForm;
+    if (manualSaveBtn) manualSaveBtn.onclick = saveManualJournalRecord;
+    if (manualCancelBtn) manualCancelBtn.onclick = hideManualJournalForm;
     if (updateBtn) updateBtn.onclick = updateSelectedJournal;
     if (deleteBtn) deleteBtn.onclick = deleteSelectedJournal;
     if (clearBtn) clearBtn.onclick = clearJournalAll;
+    resetManualJournalForm();
   }
 
 
@@ -14163,7 +14437,7 @@ textarea.journalNotes{
 
   <!-- HOME -->
   <ul id="home" title="NEXORA FX" selected="true">
-    <li class="group">ENTRY CONSOLE v1.0</li>
+    <li class="group">ENTRY CONSOLE v1.1</li>
     <li class="verdictCell">
       <div id="homeVerdict" class="verdict invalid">判定不能</div>
       <div id="homeVerdictSub" class="smallText">入力不足</div>
@@ -14184,7 +14458,7 @@ textarea.journalNotes{
     <li><a href="#trades">Trade Lifecycle <span id="navTrades" class="navValue">0</span></a></li>
     <li><a href="#analytics">Journal Analytics <span id="navAnalytics" class="navValue">—</span></a></li>
     <li><a href="#intuition">Intuition Lab <span id="navIntuition" class="navValue">0</span></a></li>
-    <li class="group">EA RESEARCH v1.0</li>
+    <li class="group">EA RESEARCH v1.1</li>
     <li><a href="#research">Research Pipeline <span id="navResearch" class="navValue">0</span></a></li>
     <li><a href="#plboard">損益ボード <span id="navPlBoard" class="navValue">—</span></a></li>
     <li><a href="#discovery">Edge Discovery <span id="navDiscovery" class="navValue">—</span></a></li>
@@ -14676,6 +14950,74 @@ textarea.journalNotes{
       <li><span>記録数</span><strong>0</strong></li>
     </ul>
 
+    <div class="actionPanel">
+      <button id="journalManualNew" class="actionButton primary" type="button">＋ 取引を手動で記録</button>
+    </div>
+
+    <div id="journalManualForm" style="display:none">
+      <div class="sech">手動Journal</div>
+      <div class="panelNote">
+        Gate不合格・現在セットアップ未保存でも、実際に行った取引を後からJournalへ記録できます。
+        Brokerの約定履歴を見ながら、実Entry / 実Exit / Lot / 結果を入力してください。
+        手動記録はJournal集計には含まれますが、PLAN / ENTRYの事前Evidenceとしては自動登録しません。
+      </div>
+      <fieldset>
+        <div class="row"><label for="manualJournalSymbol">銘柄</label><select id="manualJournalSymbol"></select></div>
+        <div class="row"><label for="manualJournalTf">時間足</label><select id="manualJournalTf"></select></div>
+        <div class="row">
+          <label for="manualJournalDirection">方向</label>
+          <select id="manualJournalDirection"><option value="BUY">BUY</option><option value="SELL">SELL</option></select>
+        </div>
+        <div class="row">
+          <label for="manualJournalStatus">Status</label>
+          <select id="manualJournalStatus">
+            <option value="PLANNED">PLANNED</option>
+            <option value="OPEN" selected>OPEN</option>
+            <option value="WIN">WIN</option>
+            <option value="LOSS">LOSS</option>
+            <option value="BE">BE</option>
+            <option value="CANCEL">CANCEL</option>
+          </select>
+        </div>
+        <div class="row">
+          <label for="manualJournalBasis">ENTRY BASIS</label>
+          <select id="manualJournalBasis">
+            <option value="">未分類</option>
+            <option value="RULE">RULE</option>
+            <option value="INTUITION">INTUITION</option>
+            <option value="MIXED">MIXED</option>
+          </select>
+        </div>
+        <div class="row"><label for="manualJournalAcctCcy">口座通貨</label><select id="manualJournalAcctCcy"></select></div>
+
+        <div class="sech">計画値（分かる範囲で）</div>
+        <div class="row"><label for="manualJournalPlannedEntry">計画Entry</label><input id="manualJournalPlannedEntry" type="number" step="any" placeholder="任意"></div>
+        <div class="row"><label for="manualJournalPlannedSL">計画SL</label><input id="manualJournalPlannedSL" type="number" step="any" placeholder="任意"></div>
+        <div class="row"><label for="manualJournalPlannedTP">計画TP</label><input id="manualJournalPlannedTP" type="number" step="any" placeholder="任意"></div>
+        <div class="row"><label for="manualJournalRisk">計画Risk</label><input id="manualJournalRisk" type="number" min="0" step="any" placeholder="任意 / 口座通貨"></div>
+
+        <div class="sech">実績</div>
+        <div class="row"><label for="manualJournalActualEntry">実Entry</label><input id="manualJournalActualEntry" type="number" step="any" placeholder="Broker約定価格"></div>
+        <div class="row"><label for="manualJournalEntryAt">Entry日時</label><input id="manualJournalEntryAt" type="datetime-local"></div>
+        <div class="row"><label for="manualJournalActualExit">実Exit</label><input id="manualJournalActualExit" type="number" step="any" placeholder="決済済みなら入力"></div>
+        <div class="row"><label for="manualJournalExitAt">Exit日時</label><input id="manualJournalExitAt" type="datetime-local"></div>
+        <div class="row"><label for="manualJournalLot">Lot</label><input id="manualJournalLot" type="number" min="0" step="any" placeholder="例 0.04"></div>
+        <div class="row"><label for="manualJournalAmount">実現金額</label><input id="manualJournalAmount" type="number" step="any" placeholder="任意 / 口座通貨"></div>
+        <div class="row"><label for="manualJournalR">実現R</label><input id="manualJournalR" type="number" step="any" placeholder="任意 / 例 1.25, -1, 0"></div>
+        <div class="row" style="min-height:92px">
+          <label for="manualJournalNotes">メモ</label>
+          <textarea id="manualJournalNotes" class="journalNotes" maxlength="800" placeholder="根拠 / 結果 / 気づき"></textarea>
+        </div>
+      </fieldset>
+      <div class="actionPanel">
+        <button id="journalManualSave" class="actionButton primary" type="button">手動Journalを保存</button>
+        <button id="journalManualCancel" class="actionButton" type="button">キャンセル</button>
+      </div>
+      <div id="journalManualStatus" class="statusBox">
+        Brokerの実際の約定履歴を入力してください。現在値を過去の約定価格として自動使用しません。
+      </div>
+    </div>
+
     <div class="journalTableWrap">
       <table class="journalTable" id="journalTable">
         <thead>
@@ -14694,6 +15036,9 @@ textarea.journalNotes{
     </div>
 
     <div id="journalEditor" style="display:none">
+      <div id="journalRecordSource" class="statusBox">
+        <strong>記録元</strong><br>—
+      </div>
       <fieldset>
         <div class="row">
           <label for="journalEditStatus">Status</label>
@@ -14789,6 +15134,7 @@ textarea.journalNotes{
     <div class="panelNote">
       集計はJournalに実際に記録された結果だけを対象にします。WIN率* は WIN / (WIN + LOSS) の記述統計で、BE/CANCELは分母から除外します。
       これ単独をEdgeの証拠とは扱いません。平均Rは「実現R」が入力されたレコードだけで計算します。
+      「＋ 取引を手動で記録」で追加した記録もJournal集計には含まれますが、事前PLAN / ENTRY Evidenceへは自動登録しません。
       Journal保存時の価格・Lot・Riskはスナップショットです。OPEN中の現在価格からMAE/MFEを追跡し、決済後は1分足OHLCから保有区間を再構築できます。
     </div>
 
@@ -15175,7 +15521,7 @@ textarea.journalNotes{
       <li><span>Rule Spec</span><strong>0</strong></li>
     </ul>
     <div class="panelNote">
-      Public v1.0はP0-P6相当の研究・検証・限定Release管理を同じPipelineに接続します。ブローカー自動発注は行いません。
+      Public v1.1はP0-P6相当の研究・検証・限定Release管理を同じPipelineに接続します.ブローカー自動発注は行いません。
       Discoveryの上位結果や中央値を自動でRuleへ昇格させる処理もありません。
     </div>
 
@@ -15623,9 +15969,11 @@ textarea.journalNotes{
 
   <!-- ABOUT -->
   <div id="about" title="仕様 / 注意事項">
+      <p><strong>v1.1:</strong> Trade Journalに「＋ 取引を手動で記録」を追加しました。現在のGateや建玉設計に依存せず、Broker約定履歴から銘柄・時間足・方向・Status・計画値・実Entry/Exit・Lot・実現金額・実現R・メモを後から記録できます。手動記録はJournalの記述統計には含まれますが、PLAN / ENTRYの事前Evidenceとしては自動登録しません。</p>
+
     <div class="aboutBox">
       <h2>NEXORA FX SYSTEM</h2>
-      <p>ENTRY CONSOLE v1.0 — 裁量トレードの判断・リスク・監視・記録・研究を一元化するコンソール。</p>
+      <p>ENTRY CONSOLE v1.1 — 裁量トレードの判断・リスク・監視・記録・研究を一元化するコンソール。</p>
       <p><strong>Public Release v1.0:</strong> ENTRY BASIS、Intuition Snapshot、Evidence Bundle、Hypothesis Card、Candidate Ledger、Rule Spec、Validation、Parity、Shadow、Limited Release、Monitoringを一つの研究パイプラインで管理します。</p>
       <p>Validationでは探索用と確認用を分離し、PROSPECTIVE_LOCKED / RETROSPECTIVE_ONLYを区別します。UNKNOWNをFALSEへ置き換えず、コスト摂動、感度、Bootstrap、Regime別・Review別の集計を保存できます。</p>
       <p>Parityは凍結Featureに対するRule判定の一致確認、Shadowは注文を出さないForward観測です。Limited ReleaseではRule / Data / Code / Config版と運用制約を固定します。</p>
